@@ -1,4 +1,4 @@
-A pure Nim client Domain Name System (DNS) implemented with [dnsprotocol](https://github.com/rockcavera/nim-dnsprotocol).
+A pure Nim Domain Name System (DNS) client implemented with [dnsprotocol](https://github.com/rockcavera/nim-dnsprotocol).
 
 This implementation has synchronous and asynchronous (async) procedures (procs) for transmitting data over the internet, using both UDP and TCP protocol.
 # Install

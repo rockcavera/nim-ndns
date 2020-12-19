@@ -2,7 +2,7 @@
 
 version       = "0.1.0"
 author        = "rockcavera"
-description   = "A pure Nim client Domain Name System (DNS)"
+description   = "A pure Nim Domain Name System (DNS) client"
 license       = "MIT"
 srcDir        = "src"
 
