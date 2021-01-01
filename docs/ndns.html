@@ -429,9 +429,9 @@ class="link-seesrc" target="_blank">Source</a>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L229"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L228"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L229" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L228" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <a id="dnsAsyncTcpQuery,DnsClient,Message,int"></a>
@@ -444,13 +444,13 @@ class="link-seesrc" target="_blank">Source</a>
 <p><strong>Parameters</strong></p>
 <ul class="simple"><li><tt class="docutils literal"><span class="pre">client</span></tt> is a <tt class="docutils literal"><span class="pre">DnsClient</span></tt> object that contains the IP and Port of the DNS server.</li>
 <li><tt class="docutils literal"><span class="pre">msg</span></tt> is a <tt class="docutils literal"><span class="pre">Message</span></tt> object that contains the DNS query.</li>
-<li><tt class="docutils literal"><span class="pre">timeout</span></tt> is the maximum waiting time, in milliseconds, to connect to the DNS server. time.</li>
+<li><tt class="docutils literal"><span class="pre">timeout</span></tt> is the maximum waiting time, in milliseconds, to connect to the DNS server. When it is negative (less than 0), it will try to connect for an unlimited time.</li>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L277"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L276"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L277" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L276" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <a id="dnsAsyncQuery,DnsClient,Message,int"></a>
@@ -464,14 +464,14 @@ class="link-seesrc" target="_blank">Source</a>
 <p><strong>Parameters</strong></p>
 <ul class="simple"><li><tt class="docutils literal"><span class="pre">client</span></tt> is a <tt class="docutils literal"><span class="pre">DnsClient</span></tt> object that contains the IP and Port of the DNS server.</li>
 <li><tt class="docutils literal"><span class="pre">msg</span></tt> is a <tt class="docutils literal"><span class="pre">Message</span></tt> object that contains the DNS query.</li>
-<li><tt class="docutils literal"><span class="pre">timeout</span></tt> is the maximum waiting time, in milliseconds, to receive the response from the DNS server.</li>
+<li><tt class="docutils literal"><span class="pre">timeout</span></tt> is the maximum waiting time, in milliseconds, to receive the response from the DNS server. When it is negative (less than 0), it will try to receive the response for an unlimited time.</li>
 <li><tt class="docutils literal"><span class="pre">retransmit</span></tt> when <tt class="docutils literal"><span class="pre">true</span></tt>, determine the retransmission of the query to TCP protocol when the received response is truncated (<tt class="docutils literal"><span class="pre">header.flags.tc == true</span></tt>).</li>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L361"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L362"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L361" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L362" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <a id="prepareRDns,string"></a>
@@ -484,9 +484,9 @@ class="link-seesrc" target="_blank">Source</a>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L426"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L431"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L426" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L431" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <a id="prepareDnsBL,string,string"></a>
@@ -500,9 +500,9 @@ class="link-seesrc" target="_blank">Source</a>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L434"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L439"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L434" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L439" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <a id="randId"></a>
@@ -511,9 +511,9 @@ class="link-seesrc" target="_blank">Source</a>
 
 Returns a <tt class="docutils literal"><span class="pre">uint16</span></tt>, randomly generated, to be used as an id.
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L443"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L448"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L443" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L448" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <a id="resolveIpv4,DnsClient,string,int"></a>
@@ -534,9 +534,9 @@ class="link-seesrc" target="_blank">Source</a>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L495"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L500"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L495" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L500" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <a id="asyncResolveIpv4,DnsClient,string,int"></a>
@@ -549,13 +549,13 @@ class="link-seesrc" target="_blank">Source</a>
 <p><strong>Parameters</strong></p>
 <ul class="simple"><li><tt class="docutils literal"><span class="pre">client</span></tt> is a <tt class="docutils literal"><span class="pre">DnsClient</span></tt> object that contains the IP and Port of the DNS server.</li>
 <li><tt class="docutils literal"><span class="pre">domain</span></tt> is the domain name that you wish to obtain IPv4 addresses.</li>
-<li><tt class="docutils literal"><span class="pre">timeout</span></tt> is the maximum waiting time, in milliseconds, to connect to the DNS server or to receive the response from the DNS server.</li>
+<li><tt class="docutils literal"><span class="pre">timeout</span></tt> is the maximum waiting time, in milliseconds, to connect to the DNS server or to receive the response from the DNS server. When it is negative (less than 0), it will try to connect for an unlimited time or to receive the response for an unlimited time.</li>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L511"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L516"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L511" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L516" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <a id="resolveIpv6,DnsClient,string,int"></a>
@@ -576,9 +576,9 @@ class="link-seesrc" target="_blank">Source</a>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L523"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L530"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L523" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L530" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <a id="asyncResolveIpv6,DnsClient,string,int"></a>
@@ -591,13 +591,13 @@ class="link-seesrc" target="_blank">Source</a>
 <p><strong>Parameters</strong></p>
 <ul class="simple"><li><tt class="docutils literal"><span class="pre">client</span></tt> is a <tt class="docutils literal"><span class="pre">DnsClient</span></tt> object that contains the IP and Port of the DNS server.</li>
 <li><tt class="docutils literal"><span class="pre">domain</span></tt> is the domain name that you wish to obtain IPv6 addresses.</li>
-<li><tt class="docutils literal"><span class="pre">timeout</span></tt> is the maximum waiting time, in milliseconds, to connect to the DNS server or to receive the response from the DNS server.</li>
+<li><tt class="docutils literal"><span class="pre">timeout</span></tt> is the maximum waiting time, in milliseconds, to connect to the DNS server or to receive the response from the DNS server. When it is negative (less than 0), it will try to connect for an unlimited time or to receive the response for an unlimited time.</li>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L539"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L546"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L539" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L546" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <a id="resolveRDns,DnsClient,string,int"></a>
@@ -617,9 +617,9 @@ class="link-seesrc" target="_blank">Source</a>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L551"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L560"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L551" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L560" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <a id="asyncResolveRDns,DnsClient,string,int"></a>
@@ -632,13 +632,13 @@ class="link-seesrc" target="_blank">Source</a>
 <p><strong>Parameters</strong></p>
 <ul class="simple"><li><tt class="docutils literal"><span class="pre">client</span></tt> is a <tt class="docutils literal"><span class="pre">DnsClient</span></tt> object that contains the IP and Port of the DNS server.</li>
 <li><tt class="docutils literal"><span class="pre">ip</span></tt> is the IPv4 or IPv6 address that is intended to obtain the domain name, which represents the reverse address.</li>
-<li><tt class="docutils literal"><span class="pre">timeout</span></tt> is the maximum waiting time, in milliseconds, to connect to the DNS server or to receive the response from the DNS server.</li>
+<li><tt class="docutils literal"><span class="pre">timeout</span></tt> is the maximum waiting time, in milliseconds, to connect to the DNS server or to receive the response from the DNS server. When it is negative (less than 0), it will try to connect for an unlimited time or to receive the response for an unlimited time.</li>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L568"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L577"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L568" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L577" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <a id="resolveDnsBL,DnsClient,string,string,int"></a>
@@ -660,9 +660,9 @@ class="link-seesrc" target="_blank">Source</a>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L581"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L592"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L581" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L592" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 <a id="asyncResolveDnsBL,DnsClient,string,string,int"></a>
@@ -676,13 +676,13 @@ class="link-seesrc" target="_blank">Source</a>
 <ul class="simple"><li><tt class="docutils literal"><span class="pre">client</span></tt> is a <tt class="docutils literal"><span class="pre">DnsClient</span></tt> object that contains the IP and Port of the DNS server.</li>
 <li><tt class="docutils literal"><span class="pre">ip</span></tt> is the IPv4 or IPv6 address that you want to know if it is blacklisted.</li>
 <li><tt class="docutils literal"><span class="pre">dnsbl</span></tt> is the domain name for DnsBL queries.</li>
-<li><tt class="docutils literal"><span class="pre">timeout</span></tt> is the maximum waiting time, in milliseconds, to connect to the DNS server or to receive the response from the DNS server.</li>
+<li><tt class="docutils literal"><span class="pre">timeout</span></tt> is the maximum waiting time, in milliseconds, to connect to the DNS server or to receive the response from the DNS server. When it is negative (less than 0), it will try to connect for an unlimited time or to receive the response for an unlimited time.</li>
 </ul>
 
 &nbsp;&nbsp;<a
-href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L600"
+href="https://github.com/rockcavera/nim-ndns/tree/main/src/ndns.nim#L611"
 class="link-seesrc" target="_blank">Source</a>
-&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L600" class="link-seesrc" target="_blank" >Edit</a>
+&nbsp;&nbsp;<a href="https://github.com/rockcavera/nim-ndns/edit/main/src/ndns.nim#L611" class="link-seesrc" target="_blank" >Edit</a>
 
 </dd>
 
@@ -695,7 +695,7 @@ class="link-seesrc" target="_blank">Source</a>
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br/>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2020-12-19 02:56:41 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2021-01-01 01:20:44 UTC</small>
       </div>
     </div>
   </div>

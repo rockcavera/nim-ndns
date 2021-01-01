@@ -174,8 +174,7 @@ proc dnsTcpQuery*(client: DnsClient, msg: Message, timeout: int = -1): Message =
   except TimeoutError:
     close(socket)
 
-    raise newException(TimeoutError,
-                       "Connection timeout has been reached")
+    raise newException(TimeoutError,  "Connection timeout has been reached")
   except:
     close(socket)
 
@@ -283,8 +282,8 @@ proc dnsAsyncTcpQuery*(client: DnsClient, msg: Message, timeout: int = 500):
   ##   server.
   ## - `msg` is a `Message` object that contains the DNS query.
   ## - `timeout` is the maximum waiting time, in milliseconds, to connect to the
-  ##   DNS server.
-  ##   time.
+  ##   DNS server. When it is negative (less than 0), it will try to connect for
+  ##   an unlimited time.
   let qBinMsg = toBinMsg(msg, true)
   
   var socket: AsyncSocket
@@ -299,13 +298,15 @@ proc dnsAsyncTcpQuery*(client: DnsClient, msg: Message, timeout: int = 500):
   
   var fut = connect(socket, client.ip, client.port)
 
-  let waiting = await withTimeout(fut, timeout)
+  if (timeout < 0):
+    yield fut
+  else:
+    let waiting = await withTimeout(fut, timeout)
 
-  if not waiting:
-    close(socket)
+    if not waiting:
+      close(socket)
 
-    raise newException(TimeoutError,
-                       "Connection timeout has been reached")
+      raise newException(TimeoutError, "Connection timeout has been reached")
 
   if fut.failed:
     close(socket)
@@ -367,7 +368,8 @@ proc dnsAsyncQuery*(client: DnsClient, msg: Message, timeout: int = 500,
   ##   server.
   ## - `msg` is a `Message` object that contains the DNS query.
   ## - `timeout` is the maximum waiting time, in milliseconds, to receive the
-  ##   response from the DNS server.
+  ##   response from the DNS server. When it is negative (less than 0), it will
+  ##   try to receive the response for an unlimited time.
   ## - `retransmit` when `true`, determine the retransmission of the query to
   ##   TCP protocol when the received response is truncated
   ##   (`header.flags.tc == true`).
@@ -385,12 +387,15 @@ proc dnsAsyncQuery*(client: DnsClient, msg: Message, timeout: int = 500,
 
   var fut = recvFrom(socket, 512)
 
-  let waiting = await withTimeout(fut, timeout)
+  if timeout < 0:
+    yield fut
+  else:
+    let waiting = await withTimeout(fut, timeout)
 
-  if not waiting:
-    close(socket)
+    if not waiting:
+      close(socket)
 
-    raise newException(TimeoutError, "Response timeout has been reached")
+      raise newException(TimeoutError, "Response timeout has been reached")
 
   if fut.failed:
     close(socket)
@@ -517,7 +522,9 @@ proc asyncResolveIpv4*(client: DnsClient, domain: string, timeout: int = 500):
   ##   server.
   ## - `domain` is the domain name that you wish to obtain IPv4 addresses.
   ## - `timeout` is the maximum waiting time, in milliseconds, to connect to the
-  ##   DNS server or to receive the response from the DNS server.
+  ##   DNS server or to receive the response from the DNS server. When it is
+  ##   negative (less than 0), it will try to connect for an unlimited time or
+  ##   to receive the response for an unlimited time.
   resolveIpv4(true)
 
 proc resolveIpv6*(client: DnsClient, domain: string, timeout: int = -1):
@@ -545,7 +552,9 @@ proc asyncResolveIpv6*(client: DnsClient, domain: string, timeout: int = 500):
   ##   server.
   ## - `domain` is the domain name that you wish to obtain IPv6 addresses.
   ## - `timeout` is the maximum waiting time, in milliseconds, to connect to the
-  ##   DNS server or to receive the response from the DNS server.
+  ##   DNS server or to receive the response from the DNS server. When it is
+  ##   negative (less than 0), it will try to connect for an unlimited time or
+  ##   to receive the response for an unlimited time.
   resolveIpv6(true)
 
 proc resolveRDns*(client: DnsClient, ip: string, timeout: int = -1):
@@ -575,7 +584,9 @@ proc asyncResolveRDns*(client: DnsClient, ip: string, timeout: int = 500):
   ## - `ip` is the IPv4 or IPv6 address that is intended to obtain the domain
   ##   name, which represents the reverse address.
   ## - `timeout` is the maximum waiting time, in milliseconds, to connect to the
-  ##   DNS server or to receive the response from the DNS server.
+  ##   DNS server or to receive the response from the DNS server. When it is
+  ##   negative (less than 0), it will try to connect for an unlimited time or
+  ##   to receive the response for an unlimited time.
   resolveRdns(true)
 
 proc resolveDnsBL*(client: DnsClient, ip, dnsbl: string, timeout: int = -1):
@@ -608,5 +619,7 @@ proc asyncResolveDnsBL*(client: DnsClient, ip, dnsbl: string,
   ##   blacklisted.
   ## - `dnsbl` is the domain name for DnsBL queries.
   ## - `timeout` is the maximum waiting time, in milliseconds, to connect to the
-  ##   DNS server or to receive the response from the DNS server.
+  ##   DNS server or to receive the response from the DNS server. When it is
+  ##   negative (less than 0), it will try to connect for an unlimited time or
+  ##   to receive the response for an unlimited time.
   result = await asyncResolveIpv4(client, prepareDnsBL(ip, dnsbl))
