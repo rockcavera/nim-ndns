@@ -77,7 +77,7 @@ import std/[asyncdispatch, asyncnet, nativesockets, net, random, strutils]
 # Nimble packages imports
 import pkg/[dnsprotocol, stew/endians2]
 
-export dnsprotocol, TimeoutError
+export dnsprotocol, TimeoutError, Port
 
 type
   DnsClient* = object ## Contains information about the DNS server.
