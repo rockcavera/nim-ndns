@@ -72,7 +72,7 @@
 ## ```
 
 # Std imports
-import std/[asyncdispatch, asyncnet, nativesockets, net, random, strutils]
+import std/[asyncdispatch, asyncnet, nativesockets, net, random]
 
 # Nimble packages imports
 import pkg/[dnsprotocol, stew/endians2]
@@ -410,15 +410,32 @@ template domainNameRDns(domainV4, domainV6: string) =
 
   case ip.family
   of IpAddressFamily.IPv4:
+    # 15 characters for IPv4 +
+    # 1 character for the dot of connection between IPv4 and `domainV4` +
+    # `len(domainV4)`
+    result = newStringOfCap(16 + len(domainV4))
+
     for i in countdown(3, 0):
       result.add($ip.address_v4[i])
       result.add('.')
 
     result.add(domainV4)
   of IpAddressFamily.IPv6:
-    for i in countup(0, 14, 2):
-      for c in toHex(fromBytesBE(uint16, ip.address_v6[i .. (i + 1)])):
-        result = $c & "." & result
+    const hexDigits = "0123456789ABCDEF"
+    # 63 characters for IPv6 +
+    # 1 character for the dot of connection between IPv6 and `domainV6` +
+    # `len(domainV6)`
+    result = newStringOfCap(64 + len(domainV6))
+
+    for i in countdown(15, 0):
+      let
+        hi = (ip.address_v6[i] shr 4) and 0xF
+        lo = ip.address_v6[i] and 0xF
+
+      add(result, hexDigits[lo])
+      add(result, '.')
+      add(result, hexDigits[hi])
+      add(result, '.')
 
     result.add(domainV6)
 
