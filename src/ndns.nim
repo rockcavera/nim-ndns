@@ -4,7 +4,7 @@
 ## This implementation has synchronous and asynchronous (async) procedures
 ## (procs) for transmitting data over the internet, using both UDP and TCP
 ## protocol.
-## 
+##
 ## Basic Use
 ## =========
 ## Resolving IPv4 addresses for nim-lang.org (**not async**):
@@ -24,7 +24,7 @@
 ##
 ## echo waitFor asyncResolveIpv4(client, "nim-lang.org")
 ## ```
-## 
+##
 ## Advanced Use
 ## ============
 ## Creating a `Message` object with a `QType.A` query for the domain name
@@ -82,9 +82,9 @@ export dnsprotocol, TimeoutError, Port
 type
   DnsClient* = object ## Contains information about the DNS server.
     ip*: string ## Dns server IP.
-    family: IpAddressFamily
     port*: Port ## DNS server listening port.
-  
+    domain: Domain
+
   UnexpectedDisconnectionError* = object of CatchableError
     ## Raised if an unexpected disconnect occurs (only TCP).
   ResponseIpNotEqualError* = object of CatchableError
@@ -110,7 +110,7 @@ randomize()
 
 proc initDnsClient*(ip: string = "8.8.8.8", port: Port = Port(53)): DnsClient =
   ## Returns a created `DnsClient` object.
-  ## 
+  ##
   ## **Parameters**
   ## - `ip` is a DNS server IP. It can be IPv4 or IPv6. It cannot be a domain
   ##   name.
@@ -118,8 +118,18 @@ proc initDnsClient*(ip: string = "8.8.8.8", port: Port = Port(53)): DnsClient =
   let tmp = parseIpAddress(ip)
 
   result.ip = ip
-  result.family = tmp.family
   result.port = port
+  case tmp.family
+  of IpAddressFamily.IPv6:
+    result.domain = AF_INET6
+  of IpAddressFamily.IPv4:
+    result.domain = AF_INET
+
+template newSocketTmpl(sockType: SockType, protocol: Protocol) =
+  when socket is AsyncSocket:
+    socket = newAsyncSocket(client.domain, sockType, protocol, false)
+  elif socket is Socket:
+    socket = newSocket(client.domain, sockType, protocol, false)
 
 template checkResponse(protocol: Protocol) =
   when IPPROTO_UDP == protocol:
@@ -147,7 +157,7 @@ template checkResponse(protocol: Protocol) =
 proc dnsTcpQuery*(client: DnsClient, msg: Message, timeout: int = -1): Message =
   ## Returns a `Message` of the DNS query response performed using the TCP
   ## protocol.
-  ## 
+  ##
   ## **Parameters**
   ## - `client` is a `DnsClient` object that contains the IP and Port of the DNS
   ##   server.
@@ -156,15 +166,11 @@ proc dnsTcpQuery*(client: DnsClient, msg: Message, timeout: int = -1): Message =
   ##   DNS server. When it is `-1`, it will try to connect for an unlimited
   ##   time.
   let qBinMsg = toBinMsg(msg, true)
-  
+
   var socket: Socket
 
-  case client.family
-  of IpAddressFamily.IPv6:
-    socket = newSocket(AF_INET6, SOCK_STREAM, IPPROTO_TCP, false)
-  of IpAddressFamily.IPv4:
-    socket = newSocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, false)
-  
+  newSocketTmpl(SOCK_STREAM, IPPROTO_TCP)
+
   setSockOpt(socket, OptNoDelay, true, cint(IPPROTO_TCP))
 
   setBlocking(getFd(socket), false)
@@ -179,7 +185,7 @@ proc dnsTcpQuery*(client: DnsClient, msg: Message, timeout: int = -1): Message =
     close(socket)
 
     raise
-  
+
   send(socket, qBinMsg)
 
   let lenRecv = recv(socket, 2)
@@ -189,7 +195,7 @@ proc dnsTcpQuery*(client: DnsClient, msg: Message, timeout: int = -1): Message =
 
     raise newException(UnexpectedDisconnectionError,
                        "An unexpected disconnect occurs")
-  
+
   var
     remaiderRecv = int(fromBytes(uint16, [uint8(ord(lenRecv[0])),
                                           uint8(ord(lenRecv[1]))], bigEndian))
@@ -207,7 +213,7 @@ proc dnsTcpQuery*(client: DnsClient, msg: Message, timeout: int = -1): Message =
     add(rBinMsg, recv)
 
     remaiderRecv = remaiderRecv - len(recv)
-  
+
   while remaiderRecv > 0:
     let recv = recv(socket, remaiderRecv)
 
@@ -229,7 +235,7 @@ proc dnsQuery*(client: DnsClient, msg: Message, timeout: int = -1,
                retransmit = false): Message =
   ## Returns a `Message` of the DNS query response performed using the UDP
   ## protocol
-  ## 
+  ##
   ## **Parameters**
   ## - `client` is a `DnsClient` object that contains the IP and Port of the DNS
   ##   server.
@@ -241,17 +247,13 @@ proc dnsQuery*(client: DnsClient, msg: Message, timeout: int = -1,
   ##   TCP protocol when the received response is truncated
   ##   (`header.flags.tc == true`).
   let qBinMsg = toBinMsg(msg)
-  
+
   var socket: Socket
 
-  case client.family
-  of IpAddressFamily.IPv6:
-    socket = newSocket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP, false)
-  of IpAddressFamily.IPv4:
-    socket = newSocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP, false)
+  newSocketTmpl(SOCK_DGRAM, IPPROTO_UDP)
 
   sendTo(socket, client.ip, client.port, qBinMsg)
-  
+
   var
     sRead = @[getFd(socket)]
     rBinMsg = newString(512)
@@ -276,7 +278,7 @@ proc dnsAsyncTcpQuery*(client: DnsClient, msg: Message, timeout: int = 500):
                       owned(Future[Message]) {.async.} =
   ## Returns a `Message` of the DNS query response performed using the TCP
   ## protocol
-  ## 
+  ##
   ## **Parameters**
   ## - `client` is a `DnsClient` object that contains the IP and Port of the DNS
   ##   server.
@@ -285,17 +287,13 @@ proc dnsAsyncTcpQuery*(client: DnsClient, msg: Message, timeout: int = 500):
   ##   DNS server. When it is negative (less than 0), it will try to connect for
   ##   an unlimited time.
   let qBinMsg = toBinMsg(msg, true)
-  
+
   var socket: AsyncSocket
 
-  case client.family
-  of IpAddressFamily.IPv6:
-    socket = newAsyncSocket(AF_INET6, SOCK_STREAM, IPPROTO_TCP, false)
-  of IpAddressFamily.IPv4:
-    socket = newAsyncSocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, false)
-  
+  newSocketTmpl(SOCK_STREAM, IPPROTO_TCP)
+
   setSockOpt(socket, OptNoDelay, true, cint(IPPROTO_TCP))
-  
+
   var fut = connect(socket, client.ip, client.port)
 
   if (timeout < 0):
@@ -312,7 +310,7 @@ proc dnsAsyncTcpQuery*(client: DnsClient, msg: Message, timeout: int = 500):
     close(socket)
 
     raise fut.readError()
-  
+
   await send(socket, qBinMsg)
 
   let lenRecv = await recv(socket, 2)
@@ -322,7 +320,7 @@ proc dnsAsyncTcpQuery*(client: DnsClient, msg: Message, timeout: int = 500):
 
     raise newException(UnexpectedDisconnectionError,
                        "An unexpected disconnect occurs")
-  
+
   var
     remaiderRecv = int(fromBytes(uint16, [uint8(ord(lenRecv[0])),
                                           uint8(ord(lenRecv[1]))], bigEndian))
@@ -340,7 +338,7 @@ proc dnsAsyncTcpQuery*(client: DnsClient, msg: Message, timeout: int = 500):
     add(rBinMsg, recv)
 
     remaiderRecv = remaiderRecv - len(recv)
-  
+
   while remaiderRecv > 0:
     let recv = await recv(socket, remaiderRecv)
 
@@ -362,7 +360,7 @@ proc dnsAsyncQuery*(client: DnsClient, msg: Message, timeout: int = 500,
                     retransmit = false): owned(Future[Message]) {.async.} =
   ## Returns a `Message` of the DNS query response performed using the UDP
   ## protocol.
-  ## 
+  ##
   ## **Parameters**
   ## - `client` is a `DnsClient` object that contains the IP and Port of the DNS
   ##   server.
@@ -374,15 +372,11 @@ proc dnsAsyncQuery*(client: DnsClient, msg: Message, timeout: int = 500,
   ##   TCP protocol when the received response is truncated
   ##   (`header.flags.tc == true`).
   let qBinMsg = toBinMsg(msg)
-  
+
   var socket: AsyncSocket
 
-  case client.family
-  of IpAddressFamily.IPv6:
-    socket = newAsyncSocket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP, false)
-  of IpAddressFamily.IPv4:
-    socket = newAsyncSocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP, false)
-  
+  newSocketTmpl(SOCK_DGRAM, IPPROTO_UDP)
+
   await sendTo(socket, client.ip, client.port, qBinMsg)
 
   var fut = recvFrom(socket, 512)
@@ -419,18 +413,18 @@ template domainNameRDns(domainV4, domainV6: string) =
     for i in countdown(3, 0):
       result.add($ip.address_v4[i])
       result.add('.')
-    
+
     result.add(domainV4)
   of IpAddressFamily.IPv6:
     for i in countup(0, 14, 2):
       for c in toHex(fromBytesBE(uint16, ip.address_v6[i .. (i + 1)])):
         result = $c & "." & result
-    
+
     result.add(domainV6)
 
 proc prepareRDns*(ip: string): string =
   ## Returns a domain name for reverse DNS lookup.
-  ## 
+  ##
   ## **Parameters**
   ## - `ip` is the IP address you want to query. It can be an IPv4 or IPv6. It
   ##   cannot be a domain name.
@@ -438,7 +432,7 @@ proc prepareRDns*(ip: string): string =
 
 proc prepareDnsBL*(ip, dnsbl: string): string =
   ## Returns a domain name for DnsBL query.
-  ## 
+  ##
   ## **Parameters**
   ## - `ip` is the IP address you want to query. It can be an IPv4 or IPv6. It
   ##   cannot be a domain name.
@@ -455,7 +449,7 @@ template resolveIpv4(async: bool) =
                       @[initQuestion(domain, QType.A, QClass.IN)])
     rmsg = when async: await dnsAsyncQuery(client, msg, timeout, true)
       else: dnsQuery(client, msg, timeout, true)
-  
+
   if rmsg.header.flags.rcode == RCode.NoError:
     for rr in rmsg.answers:
       if rr.name != msg.questions[0].qname or rr.`type` != Type.A or
@@ -472,7 +466,7 @@ template resolveIpv6(async: bool) =
                       @[initQuestion(domain, QType.AAAA, QClass.IN)])
     rmsg = when async: await dnsAsyncQuery(client, msg, timeout, true)
       else: dnsQuery(client, msg, timeout, true)
-  
+
   if rmsg.header.flags.rcode == RCode.NoError:
     for rr in rmsg.answers:
       if rr.name != msg.questions[0].qname or rr.`type` != Type.AAAA or
@@ -489,19 +483,19 @@ template resolveRdns(async: bool) =
                       @[initQuestion(prepareRDns(ip), QType.PTR, QClass.IN)])
     rmsg = when async: await dnsAsyncQuery(client, msg, timeout, true)
       else: dnsQuery(client, msg, timeout, true)
-  
+
   if rmsg.header.flags.rcode == RCode.NoError:
     for rr in rmsg.answers:
       if rr.name != msg.questions[0].qname or rr.`type` != Type.PTR or
         rr.class != Class.IN: continue
-      
+
       add(result, RDataPTR(rr.rdata).ptrdname)
 
 proc resolveIpv4*(client: DnsClient, domain: string, timeout: int = -1):
                  seq[string] =
   ## Returns all IPv4 addresses, in a `seq[string]`, that have been resolved
   ## from `domain`. The `seq[string]` can be empty.
-  ## 
+  ##
   ## **Parameters**
   ## - `client` is a `DnsClient` object that contains the IP and Port of the DNS
   ##   server.
@@ -516,7 +510,7 @@ proc asyncResolveIpv4*(client: DnsClient, domain: string, timeout: int = 500):
                       owned(Future[seq[string]]) {.async.} =
   ## Returns all IPv4 addresses, in a `seq[string]`, that have been resolved
   ## from `domain`. The `seq[string]` can be empty.
-  ## 
+  ##
   ## **Parameters**
   ## - `client` is a `DnsClient` object that contains the IP and Port of the DNS
   ##   server.
@@ -531,7 +525,7 @@ proc resolveIpv6*(client: DnsClient, domain: string, timeout: int = -1):
                  seq[string] =
   ## Returns all IPv6 addresses, in a `seq[string]`, that have been resolved
   ## from `domain`. The `seq[string]` can be empty.
-  ## 
+  ##
   ## **Parameters**
   ## - `client` is a `DnsClient` object that contains the IP and Port of the DNS
   ##   server.
@@ -546,7 +540,7 @@ proc asyncResolveIpv6*(client: DnsClient, domain: string, timeout: int = 500):
                       owned(Future[seq[string]]) {.async.} =
   ## Returns all IPv6 addresses, in a `seq[string]`, that have been resolved
   ## from `domain`. The `seq[string]` can be empty.
-  ## 
+  ##
   ## **Parameters**
   ## - `client` is a `DnsClient` object that contains the IP and Port of the DNS
   ##   server.
@@ -561,7 +555,7 @@ proc resolveRDns*(client: DnsClient, ip: string, timeout: int = -1):
                  seq[string] =
   ## Returns all domain names, in a `seq[string]`, which is obtained by the
   ## "reverse" query of `ip`. The `seq[string]` can be empty.
-  ## 
+  ##
   ## **Parameters**
   ## - `client` is a `DnsClient` object that contains the IP and Port of the DNS
   ##   server.
@@ -577,7 +571,7 @@ proc asyncResolveRDns*(client: DnsClient, ip: string, timeout: int = 500):
                       owned(Future[seq[string]]) {.async.} =
   ## Returns all domain names, in a `seq[string]`, which is obtained by the
   ## "reverse" query of `ip`. The `seq[string]` can be empty.
-  ## 
+  ##
   ## **Parameters**
   ## - `client` is a `DnsClient` object that contains the IP and Port of the DNS
   ##   server.
@@ -593,7 +587,7 @@ proc resolveDnsBL*(client: DnsClient, ip, dnsbl: string, timeout: int = -1):
                   seq[string] =
   ## Returns IPv4 addresses. Usually the loopback address (127.0.0.0/24), in
   ## which the last octet of IPv4 represents something on the black list.
-  ## 
+  ##
   ## **Parameters**
   ## - `client` is a `DnsClient` object that contains the IP and Port of the DNS
   ##   server.
@@ -611,7 +605,7 @@ proc asyncResolveDnsBL*(client: DnsClient, ip, dnsbl: string,
                        {.async.} =
   ## Returns IPv4 addresses. Usually the loopback address (127.0.0.0/24), in
   ## which the last octet of IPv4 represents something on the black list.
-  ## 
+  ##
   ## **Parameters**
   ## - `client` is a `DnsClient` object that contains the IP and Port of the DNS
   ##   server.
