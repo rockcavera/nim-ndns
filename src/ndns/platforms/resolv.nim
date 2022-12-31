@@ -36,7 +36,7 @@ type
                        resplen: ptr cint): ResSendhookact {.cdecl.}
 
   ResSendRhook = proc (ns: ptr Sockaddr_in, query: ptr uint8, querylen: cint,
-  ans: ptr uint8, anssiz: cint, resplen: ptr cint): ResSendhookact {.cdecl.}
+                       ans: ptr uint8, anssiz: cint, resplen: ptr cint): ResSendhookact {.cdecl.}
 
   SortListObj = object
     `addr`: InAddr
