@@ -70,6 +70,18 @@
 ##
 ## echo repr(rmsg)
 ## ```
+##
+## Using System DNS Server
+## =======================
+## You can initialize the DNS client with the DNS resolver server used by the
+## system. To do this, start the client with `initSystemDnsClient`.
+## ```nim
+## import ndns
+##
+## let client = initSystemDnsClient()
+##
+## echo resolveIpv4(client, "nim-lang.org")
+## ```
 
 # Std imports
 import std/[asyncdispatch, asyncnet, nativesockets, net, random]
@@ -78,6 +90,16 @@ import std/[asyncdispatch, asyncnet, nativesockets, net, random]
 import pkg/[dnsprotocol, stew/endians2]
 
 export dnsprotocol, TimeoutError, Port
+
+# Internal
+when defined(nimdoc):
+  import ./ndns/platforms/winapi
+  import ./ndns/platforms/resolv except getSystemDnsServer
+else:
+  when defined(windows):
+    import ./ndns/platforms/winapi
+  elif defined(linux) or defined(bsd):
+    import ./ndns/platforms/resolv
 
 type
   DnsClient* = object ## Contains information about the DNS server.
@@ -105,10 +127,13 @@ const
     ## Special domain reserved for reverse IP lookup for IPv4
   ipv6Arpa = "ip6.arpa"
     ## Special domain reserved for IP reverse query for IPv6
+  defaultIpDns* = "8.8.8.8"
+    ## Default dns server ip for DNS queries. The Google server was chosen due
+    ## to its uptime, with the same IP.
 
 randomize()
 
-proc initDnsClient*(ip: string = "8.8.8.8", port: Port = Port(53)): DnsClient =
+proc initDnsClient*(ip: string = defaultIpDns, port: Port = Port(53)): DnsClient =
   ## Returns a created `DnsClient` object.
   ##
   ## **Parameters**
@@ -124,6 +149,31 @@ proc initDnsClient*(ip: string = "8.8.8.8", port: Port = Port(53)): DnsClient =
     result.domain = AF_INET6
   of IpAddressFamily.IPv4:
     result.domain = AF_INET
+
+proc initSystemDnsClient*(): DnsClient =
+  ## Returns a `DnsClient` object, in which the dns server IP is the first one
+  ## used by the system. If it is not possible to determine a dns server IP by
+  ## the system, it will be initialized with `defaultIpDns`.
+  ##
+  ## Currently implemented for:
+  ## - Windows
+  ## - Linux and Bsd
+  ##
+  ## Notes:
+  ## - It just creates a `DnsClient` object with the IPv4 used by the system.
+  ##   Does not use the system's native DNS resolution implementation unless the
+  ##   system provides a proxy.
+  ## - The `ip` field in the `DnsClient` object does not change automatically if
+  ##   the IP used by the system changes.
+  when declared(getSystemDnsServer):
+    var ipServDns = getSystemDnsServer()
+
+    if ipServDns == "":
+      ipServDns = defaultIpDns
+
+    initDnsClient(ipServDns)
+  else:
+    initDnsClient()
 
 template newSocketTmpl(sockType: SockType, protocol: Protocol) =
   when socket is AsyncSocket:

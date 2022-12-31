@@ -65,5 +65,14 @@ var rmsg = waitFor dnsAsyncQuery(client, msg)
 
 echo repr(rmsg)
 ```
+# Using System DNS Server
+You can initialize the DNS client with the DNS resolver server used by the system. To do this, start the client with `initSystemDnsClient`.
+```nim
+import ndns
+
+let client = initSystemDnsClient()
+
+echo resolveIpv4(client, "nim-lang.org")
+```
 # Documentation
-https://rockcavera.github.io/nim-ndns/theindex.html
+https://rockcavera.github.io/nim-ndns/ndns.html
