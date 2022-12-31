@@ -1,11 +1,13 @@
 ## Minimal implementation to get System DNS Server (IPv4 only)
 ##
-## This implementation uses the resolv library, which should work on linux and
-## bsd.
-## References: https://man7.org/linux/man-pages/man3/resolver.3.html
-##             https://www.freebsd.org/cgi/man.cgi?query=resolver
+## This implementation uses the resolv library, which should work on Linux and
+## BSD.
 ##
-## Using this module implies passing "-lresolv" or "-lc" to the linkage process.
+## References:
+## - https://man7.org/linux/man-pages/man3/resolver.3.html
+## - https://www.freebsd.org/cgi/man.cgi?query=resolver
+##
+## Using this module implies passing `-lresolv` or `-lc` to the linkage process.
 ##
 ## To use the interface deprecated by the resolv library, compile with
 ## `-d:useDeprecatedResolv`.

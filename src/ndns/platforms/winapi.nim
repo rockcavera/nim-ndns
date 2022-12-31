@@ -2,7 +2,9 @@
 ##
 ## This implementation uses the winapi function `GetNetworkParams` and should
 ## work for Windows.
-## Reference: https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getnetworkparams
+##
+## References:
+## - https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getnetworkparams
 
 const
   MAX_HOSTNAME_LEN = 128

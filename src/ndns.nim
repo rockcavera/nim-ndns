@@ -82,6 +82,7 @@
 ##
 ## echo resolveIpv4(client, "nim-lang.org")
 ## ```
+## See `initSystemDnsClient()<#initSystemDnsClient>`_ for supported platforms.
 
 # Std imports
 import std/[asyncdispatch, asyncnet, nativesockets, net, random]
@@ -156,8 +157,9 @@ proc initSystemDnsClient*(): DnsClient =
   ## the system, it will be initialized with `defaultIpDns`.
   ##
   ## Currently implemented for:
-  ## - Windows
-  ## - Linux and Bsd
+  ## - `Windows<ndns/platforms/winapi.html>`_
+  ## - `Linux<ndns/platforms/resolv.html>`_
+  ## - `BSD<ndns/platforms/resolv.html>`_
   ##
   ## Notes:
   ## - It just creates a `DnsClient` object with the IPv4 used by the system.
