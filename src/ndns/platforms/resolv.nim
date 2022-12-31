@@ -2,9 +2,10 @@
 ##
 ## This implementation uses the resolv library, which should work on linux and
 ## bsd.
-## Reference: https://man7.org/linux/man-pages/man3/resolver.3.html
+## References: https://man7.org/linux/man-pages/man3/resolver.3.html
+##             https://www.freebsd.org/cgi/man.cgi?query=resolver
 ##
-## Using this module implies passing "-lresolv" to the linkage process.
+## Using this module implies passing "-lresolv" or "-lc" to the linkage process.
 ##
 ## To use the interface deprecated by the resolv library, compile with
 ## `-d:useDeprecatedResolv`.
@@ -14,7 +15,10 @@ when defined(nimdoc):
 else:
   import std/[net, posix]
 
-{.passL: "-lresolv".}
+when defined(bsd):
+  {.passL: "-lc".}
+else:
+  {.passL: "-lresolv".}
 
 const
   MAXNS = 3
