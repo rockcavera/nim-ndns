@@ -132,7 +132,7 @@ proc getSystemDnsServer*(): string =
   when defined(useDeprecatedResolv):
     if resInit() == 0:
       when useOpenBSDResolv:
-        let saddr = res.nsaddrList[0]
+        let saddr = cast[ResState](res).nsaddrList[0]
       else:
         let saddr = cast[ResState](resState()[]).nsaddrList[0]
 
