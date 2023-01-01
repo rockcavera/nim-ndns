@@ -35,7 +35,9 @@ const
 
 when useOpenBSDResolv:
   {.emit: """/*INCLUDESECTION*/
-#include <netinet/in.h>""".}
+#include <netinet/in.h>
+""".} # https://github.com/troglobit/inadyn/issues/241
+
   const MAXDNSLUS = 4
 
   type
@@ -111,11 +113,14 @@ when not defined(useDeprecatedResolv):
   proc resNinit(statep: var ResState): cint {.importc: "res_ninit", header: "<resolv.h>".}
   proc resNclose(rstatep: var ResState) {.importc: "res_nclose", header: "<resolv.h>".}
 else:
-  type
-    SResState {.importc: "struct __res_state".} = object
+  type SResState {.importc: "struct __res_state".} = object
+
+  when useOpenBSDResolv:
+    var res {.importc: "extern struct __res_state _res", nodecl.}: SResState
+  else:
+    proc resState(): ptr SResState {.importc: "__res_state".}
 
   proc resInit(): cint {.importc: "res_init", header: "<resolv.h>".}
-  proc resState(): ptr SResState {.importc: "__res_state".}
 
 proc getSystemDnsServer*(): string =
   ## Returns the IPv4 used by the system for DNS resolution. Otherwise it
@@ -126,7 +131,12 @@ proc getSystemDnsServer*(): string =
 
   when defined(useDeprecatedResolv):
     if resInit() == 0:
-      fromSockAddr(cast[ResState](resState()[]).nsaddrList[0], sizeof(Sockaddr_in).SockLen, ip, port)
+      when useOpenBSDResolv:
+        let saddr = res.nsaddrList[0]
+      else:
+        let saddr = cast[ResState](resState()[]).nsaddrList[0]
+
+      fromSockAddr(saddr, sizeof(Sockaddr_in).SockLen, ip, port)
 
       result = $ip
   else:
