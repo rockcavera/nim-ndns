@@ -23,9 +23,27 @@ else:
   {.passL: "-lresolv".}
 
 const
+  useOpenBSDResolv = when defined(useDeprecatedResolv) and defined(openbsd): true
+                     else: false
+    # The structure of res_state in OpenBSD has several peculiarities, as well
+    # as currently adopts the deprecated version with res_init().
+    # https://github.com/openbsd/src/blob/e3c5fa921ef394179421471c88eb2be26d8a6692/include/resolv.h
+
   MAXNS = 3
   MAXDNSRCH = 6
   MAXRESOLVSORT = 10
+
+when useOpenBSDResolv:
+  const MAXDNSLUS = 4
+
+  type
+    CulongOrCuint = cuint
+
+    ResTimeSpecObj = object
+      resSec: Time
+      resNSec: clong
+else:
+  type CulongOrCuint = culong
 
 type
   ResSendhookact {.size: 4.} = enum
@@ -40,47 +58,57 @@ type
 
   SortListObj = object
     `addr`: InAddr
-    mask: cuint
+    mask: uint32 # uint32_t
 
   Ext = object
-    nscount: cushort
-    nsmap: array[MAXNS, cushort]
+    nscount: uint16 # u_int16_t
+    nsmap: array[MAXNS, uint16]
     nssocks: array[MAXNS, cint]
-    nscount6: cushort
-    nsinit: cushort
+    nscount6: uint16
+    nsinit: uint16
     nsaddrs: array[MAXNS, ptr Sockaddr_in6]
-    initstamp: culonglong
+    initstamp: array[2, cuint]
 
   UUnion {.union.} = object
-    pad: array[52, char]
+    pad: array[52, cchar]
     ext: Ext
 
   ResState = object
     retrans: cint
     retry: cint
-    options: culong
+    options: CulongOrCuint
     nscount: cint
+    when useOpenBSDResolv:
+      family: array[2, cint]
     nsaddrList: array[MAXNS, Sockaddr_in]
     id: cushort
     dnsrch: array[MAXDNSRCH + 1, cstring]
-    defdname: array[256, char]
-    pfcode: culong
+    defdname: array[256, cchar]
+    pfcode: CulongOrCuint
     ndots {.bitsize:4.}: cuint
     nsort {.bitsize:4.}: cuint
-    ipv6_unavail {.bitsize:1.}: cuint
-    unused {.bitsize:23.}: cuint
+    when useOpenBSDResolv:
+      unused: aray[3, cchar]
+    else:
+      ipv6_unavail {.bitsize:1.}: cuint
+      unused {.bitsize:23.}: cuint
     sortList: array[MAXRESOLVSORT, SortListObj]
-    qhook: ResSendQhook
-    rhook: ResSendRhook
-    resHRrrno: cint
-    vcsock: cint
-    flags: cuint
-    u: UUnion
+    when useOpenBSDResolv:
+      lookups: array[MAXDNSLUS, cchar]
+      restimespec: ResTimeSpecObj
+      reschktime: Time
+    else:
+      qhook: ResSendQhook
+      rhook: ResSendRhook
+      resHErrno: cint
+      vcsock: cint
+      flags: cuint
+      u: UUnion
 
-proc resNinit(statep: var ResState): cint {.importc: "res_ninit", header: "<resolv.h>".}
-proc resNclose(rstatep: var ResState) {.importc: "res_nclose", header: "<resolv.h>".}
-
-when defined(useDeprecatedResolv):
+when not defined(useDeprecatedResolv):
+  proc resNinit(statep: var ResState): cint {.importc: "res_ninit", header: "<resolv.h>".}
+  proc resNclose(rstatep: var ResState) {.importc: "res_nclose", header: "<resolv.h>".}
+else:
   type
     SResState {.importc: "struct __res_state".} = object
 
