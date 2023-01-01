@@ -34,6 +34,8 @@ const
   MAXRESOLVSORT = 10
 
 when useOpenBSDResolv:
+  {.emit: """/*INCLUDESECTION*/
+#include <netinet/in.h>""".}
   const MAXDNSLUS = 4
 
   type
