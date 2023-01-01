@@ -88,7 +88,7 @@ type
     ndots {.bitsize:4.}: cuint
     nsort {.bitsize:4.}: cuint
     when useOpenBSDResolv:
-      unused: aray[3, cchar]
+      unused: array[3, cchar]
     else:
       ipv6_unavail {.bitsize:1.}: cuint
       unused {.bitsize:23.}: cuint
