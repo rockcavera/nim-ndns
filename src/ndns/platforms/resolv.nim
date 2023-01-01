@@ -10,7 +10,9 @@
 ## Using this module implies passing `-lresolv` or `-lc` to the linkage process.
 ##
 ## To use the interface deprecated by the resolv library, compile with
-## `-d:useDeprecatedResolv`.
+## `-d:useDeprecatedResolv`. On OpenBSD it is recommended to define this symbol
+## when compiling, since the `resolv.h` used on this platform has its own
+## definitions that will only be used when this symbol is defined.
 
 when defined(nimdoc):
   import std/[net, winlean]
@@ -36,7 +38,7 @@ const
 when useOpenBSDResolv:
   {.emit: """/*INCLUDESECTION*/
 #include <netinet/in.h>
-""".} # https://github.com/troglobit/inadyn/issues/241
+""".} # See https://github.com/troglobit/inadyn/issues/241
 
   const MAXDNSLUS = 4
 
@@ -110,8 +112,8 @@ type
       u: UUnion
 
 when not defined(useDeprecatedResolv):
-  proc resNinit(statep: var ResState): cint {.importc: "res_ninit", header: "<resolv.h>".}
-  proc resNclose(rstatep: var ResState) {.importc: "res_nclose", header: "<resolv.h>".}
+  proc resNInit(statep: var ResState): cint {.importc: "res_ninit", header: "<resolv.h>".}
+  proc resNClose(rstatep: var ResState) {.importc: "res_nclose", header: "<resolv.h>".}
 else:
   type SResState {.importc: "struct __res_state".} = object
 
@@ -142,8 +144,8 @@ proc getSystemDnsServer*(): string =
   else:
     var rs: ResState
 
-    if resNinit(rs) == 0:
+    if resNInit(rs) == 0:
       fromSockAddr(rs.nsaddrList[0], sizeof(Sockaddr_in).SockLen, ip, port)
-      resNclose(rs)
+      resNClose(rs)
 
       result = $ip
