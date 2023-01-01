@@ -116,7 +116,7 @@ else:
   type SResState {.importc: "struct __res_state".} = object
 
   when useOpenBSDResolv:
-    var res {.importc: "extern struct __res_state _res", nodecl.}: SResState
+    var res {.importc: "extern struct __res_state _res".}: SResState
   else:
     proc resState(): ptr SResState {.importc: "__res_state".}
 
