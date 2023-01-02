@@ -9,10 +9,17 @@
 ##
 ## Using this module implies passing `-lresolv` or `-lc` to the linkage process.
 ##
-## To use the interface deprecated by the resolv library, compile with
-## `-d:useDeprecatedResolv`. On OpenBSD it is recommended to define this symbol
-## when compiling, since the `resolv.h` used on this platform has its own
-## definitions that will only be used when this symbol is defined.
+## Notes:
+## - To use the interface deprecated by the resolv library, compile with
+##   `-d:useDeprecatedResolv`. On **OpenBSD** it is recommended to define this symbol
+##   when compiling, since the `resolv.h` used on this platform has its own
+##   definitions that will only be used when this symbol is defined.
+## - Unfortunately systems based on musl libc do not have `res_init()`
+##   implemented. Such a libc loads the settings from "/etc/resolv.conf", when
+##   needed, through `__get_resolv_conf()` which is not compatible with
+##   `struct __res_state`. Faced with so many divergences found using
+##   `resolv.h`, I believe it is better to implement a parser for
+##   "/etc/resolv.conf". TODO
 
 when defined(nimdoc):
   import std/[net, winlean]
@@ -146,7 +153,7 @@ proc getSystemDnsServer*(): string =
     when useOpenBSDResolv:
       rs = cast[ResState](res)
     elif defined(useDeprecatedResolv):
-      rs = cast[ResState](resState()[])
+      rs = cast[ResState](resState()[]) # If nim compiled with `--threads:on`, on NetBSD it will result in SIGABRT
 
     if (rs.options and RES_INIT) == RES_INIT:
       fromSockAddr(rs.nsaddrList[0], sizeof(Sockaddr_in).SockLen, ip, port)
