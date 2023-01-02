@@ -47,28 +47,32 @@ when useOpenBSDResolv:
   type
     CulongOrCuint = cuint
 
-    ResTimeSpecObj = object
+    ResTimeSpecObj {.nodecl.} = object
       resSec: Time
       resNSec: clong
 else:
   type CulongOrCuint = culong
 
 type
-  ResSendhookact {.size: 4.} = enum
-    ResGoahead, ResNextns, ResModified, ResDone, ResError
+  # Commented for being currently in disuse
+  #ResSendhookact {.size: 4.} = enum
+  #  ResGoahead, ResNextns, ResModified, ResDone, ResError
 
-  ResSendQhook = proc (ns: ptr ptr Sockaddr_in, query: ptr ptr uint8,
-                       querylen: ptr cint, ans: ptr uint8, anssiz: cint,
-                       resplen: ptr cint): ResSendhookact {.cdecl.}
+  #ResSendQhook = proc (ns: ptr ptr Sockaddr_in, query: ptr ptr uint8,
+  #                     querylen: ptr cint, ans: ptr uint8, anssiz: cint,
+  #                     resplen: ptr cint): ResSendhookact {.cdecl.}
 
-  ResSendRhook = proc (ns: ptr Sockaddr_in, query: ptr uint8, querylen: cint,
-                       ans: ptr uint8, anssiz: cint, resplen: ptr cint): ResSendhookact {.cdecl.}
+  #ResSendRhook = proc (ns: ptr Sockaddr_in, query: ptr uint8, querylen: cint,
+  #                     ans: ptr uint8, anssiz: cint, resplen: ptr cint): ResSendhookact {.cdecl.}
 
-  SortListObj = object
+  ResSendQhook = pointer
+  ResSendRhook = pointer
+
+  SortListObj {.nodecl.} = object
     `addr`: InAddr
     mask: uint32 # uint32_t
 
-  Ext = object
+  Ext {.nodecl.} = object
     nscount: uint16 # u_int16_t
     nsmap: array[MAXNS, uint16]
     nssocks: array[MAXNS, cint]
@@ -77,11 +81,11 @@ type
     nsaddrs: array[MAXNS, ptr Sockaddr_in6]
     initstamp: array[2, cuint]
 
-  UUnion {.union.} = object
+  UUnion {.union, nodecl.} = object
     pad: array[52, cchar]
     ext: Ext
 
-  ResState = object
+  ResState {.importc: "struct __res_state", header: "<resolv.h>".} = object
     retrans: cint
     retry: cint
     options: CulongOrCuint
@@ -118,12 +122,10 @@ when not defined(useDeprecatedResolv):
   proc resNInit(statep: var ResState): cint {.importc: "res_ninit".}
   proc resNClose(rstatep: var ResState) {.importc: "res_nclose".}
 else:
-  type SResState {.importc: "struct __res_state".} = object
-
   when useOpenBSDResolv:
-    var res {.importc: "_res".}: SResState
+    var res {.importc: "_res".}: ResState # currently it is a C macro for `struct __res_state __res_state(void)`
   else:
-    proc resState(): ptr SResState {.importc: "__res_state".}
+    proc resState(): ptr ResState {.importc: "__res_state".}
 
   proc resInit(): cint {.importc: "res_init".}
 {.pop.}
@@ -135,13 +137,14 @@ proc getSystemDnsServer*(): string =
     rs: ResState
     ip: IpAddress
     port: Port
-    rInit = when defined(useDeprecatedResolv): resInit() else: resNInit(rs)
+    rInit = when defined(useDeprecatedResolv): resInit()
+            else: resNInit(rs)
 
   if rInit == 0:
     when useOpenBSDResolv:
-      rs = cast[ResState](res)
+      rs = res # copy
     elif defined(useDeprecatedResolv):
-      rs = cast[ResState](resState()[])
+      rs = resState()[] # the same as `cast[ResState](resState()[])` -> copy
 
     if (rs.options and RES_INIT) == RES_INIT:
       fromSockAddr(rs.nsaddrList[0], sizeof(Sockaddr_in).SockLen, ip, port)
