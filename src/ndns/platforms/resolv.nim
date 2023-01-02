@@ -35,6 +35,8 @@ const
   MAXDNSRCH = 6
   MAXRESOLVSORT = 10
 
+  RES_INIT = 1
+
 when useOpenBSDResolv:
   {.emit: """/*INCLUDESECTION*/
 #include <netinet/in.h>
@@ -111,41 +113,40 @@ type
       flags: cuint
       u: UUnion
 
+{.push header: "<resolv.h>".}
 when not defined(useDeprecatedResolv):
-  proc resNInit(statep: var ResState): cint {.importc: "res_ninit", header: "<resolv.h>".}
-  proc resNClose(rstatep: var ResState) {.importc: "res_nclose", header: "<resolv.h>".}
+  proc resNInit(statep: var ResState): cint {.importc: "res_ninit".}
+  proc resNClose(rstatep: var ResState) {.importc: "res_nclose".}
 else:
   type SResState {.importc: "struct __res_state".} = object
 
   when useOpenBSDResolv:
-    var res {.importc: "_res", nodecl.}: SResState
+    var res {.importc: "_res".}: SResState
   else:
     proc resState(): ptr SResState {.importc: "__res_state".}
 
-  proc resInit(): cint {.importc: "res_init", header: "<resolv.h>".}
+  proc resInit(): cint {.importc: "res_init".}
+{.pop.}
 
 proc getSystemDnsServer*(): string =
   ## Returns the IPv4 used by the system for DNS resolution. Otherwise it
   ## returns an empty string `""`.
   var
+    rs: ResState
     ip: IpAddress
     port: Port
+    rInit = when defined(useDeprecatedResolv): resInit() else: resNInit(rs)
 
-  when defined(useDeprecatedResolv):
-    if resInit() == 0:
-      when useOpenBSDResolv:
-        let saddr = cast[ResState](res).nsaddrList[0]
-      else:
-        let saddr = cast[ResState](resState()[]).nsaddrList[0]
+  if rInit == 0:
+    when useOpenBSDResolv:
+      rs = cast[ResState](res)
+    elif defined(useDeprecatedResolv):
+      rs = cast[ResState](resState()[])
 
-      fromSockAddr(saddr, sizeof(Sockaddr_in).SockLen, ip, port)
-
-      result = $ip
-  else:
-    var rs: ResState
-
-    if resNInit(rs) == 0:
+    if (rs.options and RES_INIT) == RES_INIT:
       fromSockAddr(rs.nsaddrList[0], sizeof(Sockaddr_in).SockLen, ip, port)
-      resNClose(rs)
 
       result = $ip
+
+    when not defined(useDeprecatedResolv):
+      resNClose(rs)
