@@ -92,7 +92,7 @@ type
     nscount: cint
     when useOpenBSDResolv:
       family: array[2, cint]
-    nsaddrList: array[MAXNS, Sockaddr_in]
+    nsaddrList {.importc: "nsaddr_list".}: array[MAXNS, Sockaddr_in]
     id: cushort
     dnsrch: array[MAXDNSRCH + 1, cstring]
     defdname: array[256, cchar]
