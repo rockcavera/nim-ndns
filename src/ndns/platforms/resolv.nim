@@ -9,10 +9,17 @@
 ##
 ## Using this module implies passing `-lresolv` or `-lc` to the linkage process.
 ##
-## To use the interface deprecated by the resolv library, compile with
-## `-d:useDeprecatedResolv`. On OpenBSD it is recommended to define this symbol
-## when compiling, since the `resolv.h` used on this platform has its own
-## definitions that will only be used when this symbol is defined.
+## Notes:
+## - To use the interface deprecated by the resolv library, compile with
+##   `-d:useDeprecatedResolv`. On **OpenBSD** it is recommended to define this symbol
+##   when compiling, since the `resolv.h` used on this platform has its own
+##   definitions that will only be used when this symbol is defined.
+## - Unfortunately systems based on musl libc do not have `res_init()`
+##   implemented. Such a libc loads the settings from "/etc/resolv.conf", when
+##   needed, through `__get_resolv_conf()` which is not compatible with
+##   `struct __res_state`. Faced with so many divergences found using
+##   `resolv.h`, I believe it is better to implement a parser for
+##   "/etc/resolv.conf". TODO
 
 when defined(nimdoc):
   import std/[net, winlean]
@@ -35,6 +42,8 @@ const
   MAXDNSRCH = 6
   MAXRESOLVSORT = 10
 
+  RES_INIT = 1
+
 when useOpenBSDResolv:
   {.emit: """/*INCLUDESECTION*/
 #include <netinet/in.h>
@@ -52,15 +61,19 @@ else:
   type CulongOrCuint = culong
 
 type
-  ResSendhookact {.size: 4.} = enum
-    ResGoahead, ResNextns, ResModified, ResDone, ResError
+  # Commented for being currently in disuse
+  #ResSendhookact {.size: 4.} = enum
+  #  ResGoahead, ResNextns, ResModified, ResDone, ResError
 
-  ResSendQhook = proc (ns: ptr ptr Sockaddr_in, query: ptr ptr uint8,
-                       querylen: ptr cint, ans: ptr uint8, anssiz: cint,
-                       resplen: ptr cint): ResSendhookact {.cdecl.}
+  #ResSendQhook = proc (ns: ptr ptr Sockaddr_in, query: ptr ptr uint8,
+  #                     querylen: ptr cint, ans: ptr uint8, anssiz: cint,
+  #                     resplen: ptr cint): ResSendhookact {.cdecl.}
 
-  ResSendRhook = proc (ns: ptr Sockaddr_in, query: ptr uint8, querylen: cint,
-                       ans: ptr uint8, anssiz: cint, resplen: ptr cint): ResSendhookact {.cdecl.}
+  #ResSendRhook = proc (ns: ptr Sockaddr_in, query: ptr uint8, querylen: cint,
+  #                     ans: ptr uint8, anssiz: cint, resplen: ptr cint): ResSendhookact {.cdecl.}
+
+  ResSendQhook = pointer
+  ResSendRhook = pointer
 
   SortListObj = object
     `addr`: InAddr
@@ -111,41 +124,41 @@ type
       flags: cuint
       u: UUnion
 
-when not defined(useDeprecatedResolv):
-  proc resNInit(statep: var ResState): cint {.importc: "res_ninit", header: "<resolv.h>".}
-  proc resNClose(rstatep: var ResState) {.importc: "res_nclose", header: "<resolv.h>".}
-else:
-  type SResState {.importc: "struct __res_state".} = object
+{.push header: "<resolv.h>".}
+type SResState {.importc: "struct __res_state".} = object
 
+when not defined(useDeprecatedResolv):
+  proc resNInit(statep: ptr SResState): cint {.importc: "res_ninit".}
+  proc resNClose(rstatep: ptr SResState) {.importc: "res_nclose".}
+else:
   when useOpenBSDResolv:
-    var res {.importc: "_res", nodecl.}: SResState
+    var res {.importc: "_res".}: SResState # currently it is a C macro for `struct __res_state __res_state(void)`
   else:
     proc resState(): ptr SResState {.importc: "__res_state".}
 
-  proc resInit(): cint {.importc: "res_init", header: "<resolv.h>".}
+  proc resInit(): cint {.importc: "res_init".}
+{.pop.}
 
 proc getSystemDnsServer*(): string =
   ## Returns the IPv4 used by the system for DNS resolution. Otherwise it
   ## returns an empty string `""`.
   var
+    rs: ResState
     ip: IpAddress
     port: Port
+    rInit = when defined(useDeprecatedResolv): resInit()
+            else: resNInit(cast[ptr SResState](addr rs))
 
-  when defined(useDeprecatedResolv):
-    if resInit() == 0:
-      when useOpenBSDResolv:
-        let saddr = cast[ResState](res).nsaddrList[0]
-      else:
-        let saddr = cast[ResState](resState()[]).nsaddrList[0]
+  if rInit == 0:
+    when useOpenBSDResolv:
+      rs = cast[ResState](res)
+    elif defined(useDeprecatedResolv):
+      rs = cast[ResState](resState()[]) # If nim compiled with `--threads:on`, on NetBSD it will result in SIGABRT
 
-      fromSockAddr(saddr, sizeof(Sockaddr_in).SockLen, ip, port)
-
-      result = $ip
-  else:
-    var rs: ResState
-
-    if resNInit(rs) == 0:
+    if (rs.options and RES_INIT) == RES_INIT:
       fromSockAddr(rs.nsaddrList[0], sizeof(Sockaddr_in).SockLen, ip, port)
-      resNClose(rs)
 
       result = $ip
+
+    when not defined(useDeprecatedResolv):
+      resNClose(cast[ptr SResState](addr rs))
