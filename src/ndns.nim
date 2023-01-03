@@ -104,8 +104,8 @@ else:
 
 type
   DnsClient* = object ## Contains information about the DNS server.
-    ip*: string ## Dns server IP.
-    port*: Port ## DNS server listening port.
+    ip: string ## Dns server IP.
+    port: Port ## DNS server listening port.
     domain: Domain
 
   UnexpectedDisconnectionError* = object of CatchableError
@@ -128,13 +128,13 @@ const
     ## Special domain reserved for reverse IP lookup for IPv4
   ipv6Arpa = "ip6.arpa"
     ## Special domain reserved for IP reverse query for IPv6
-  defaultIpDns* = "8.8.8.8"
-    ## Default dns server ip for DNS queries. The Google server was chosen due
-    ## to its uptime, with the same IP.
+  ndnsDnsServerIp* {.strdefine.} = "8.8.8.8"
+    ## Default dns server ip for queries. You can change by compiling with
+    ## `-d:ndnsDnsServerIp=1.1.1.1`.
 
 randomize()
 
-proc initDnsClient*(ip: string = defaultIpDns, port: Port = Port(53)): DnsClient =
+proc initDnsClient*(ip: string = ndnsDnsServerIp, port: Port = Port(53)): DnsClient =
   ## Returns a created `DnsClient` object.
   ##
   ## **Parameters**
@@ -154,7 +154,7 @@ proc initDnsClient*(ip: string = defaultIpDns, port: Port = Port(53)): DnsClient
 proc initSystemDnsClient*(): DnsClient =
   ## Returns a `DnsClient` object, in which the dns server IP is the first one
   ## used by the system. If it is not possible to determine a dns server IP by
-  ## the system, it will be initialized with `defaultIpDns`.
+  ## the system, it will be initialized with `ndnsDnsServerIp`.
   ##
   ## Currently implemented for:
   ## - `Windows<ndns/platforms/winapi.html>`_
@@ -171,11 +171,19 @@ proc initSystemDnsClient*(): DnsClient =
     var ipServDns = getSystemDnsServer()
 
     if ipServDns == "":
-      ipServDns = defaultIpDns
+      ipServDns = ndnsDnsServerIp
 
     initDnsClient(ipServDns)
   else:
     initDnsClient()
+
+proc getIp*(client: DnsClient): string =
+  ## Returns the IP defined in the `client`.
+  client.ip
+
+proc getPort*(client: DnsClient): Port =
+  ## Returns the port defined in the `client`.
+  client.port
 
 template newSocketTmpl(sockType: SockType, protocol: Protocol) =
   when socket is AsyncSocket:
