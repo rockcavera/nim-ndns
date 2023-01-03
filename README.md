@@ -26,7 +26,7 @@ let client = initDnsClient()
 echo waitFor asyncResolveIpv4(client, "nim-lang.org")
 ```
 
-For a "real-life" async example, see [resolver.nim](/blob/main/examples/resolver.nim). In this example I have made as many comments as possible, even if they look silly. I think it might help someone, as a similar example I provided privately for a newcomer to Nim. It can also be compiled with `-d:showLoopLog` to show the async workflow.
+For a "real-life" async example, see [resolver.nim](/examples/resolver.nim). In this example I have made as many comments as possible, even if they look silly. I think it might help someone, as a similar example I provided privately for a newcomer to Nim. It can also be compiled with `-d:showLoopLog` to show the async workflow.
 # Advanced Use
 Creating a `Message` object with a `QType.A` query for the domain name nim-lang.org, transmitting the `Message` and receiving the response (**not async**):
 ```nim
