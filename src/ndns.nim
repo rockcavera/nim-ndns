@@ -97,15 +97,19 @@ when defined(nimdoc):
   import ./ndns/platforms/winapi
   import ./ndns/platforms/resolv except getSystemDnsServer
 else:
-  when defined(windows):
-    import ./ndns/platforms/winapi
-  elif defined(linux) or defined(bsd):
+  when defined(linux) or defined(bsd) or defined(ndnsUseResolver):
     import ./ndns/platforms/resolv
+  elif defined(windows):
+    import ./ndns/platforms/winapi
 
 type
   DnsClient* = object ## Contains information about the DNS server.
-    ip*: string ## Dns server IP.
-    port*: Port ## DNS server listening port.
+    ip*: string
+      ## Dns server IP. **In the future, this field will no longer be exportable.
+      ## Use `getIp()`.**
+    port*: Port
+      ## DNS server listening port. **In the future, this field will no longer be
+      ## exportable. Use `getPort()`.**
     domain: Domain
 
   UnexpectedDisconnectionError* = object of CatchableError
@@ -128,33 +132,53 @@ const
     ## Special domain reserved for reverse IP lookup for IPv4
   ipv6Arpa = "ip6.arpa"
     ## Special domain reserved for IP reverse query for IPv6
-  defaultIpDns* = "8.8.8.8"
+  defaultIpDns* {.deprecated: "Use `ndnsDnsServerIp`".} = "8.8.8.8"
     ## Default dns server ip for DNS queries. The Google server was chosen due
     ## to its uptime, with the same IP.
+  ndnsDnsServerIp* {.strdefine.} = "8.8.8.8"
+    ## Default dns server ip for queries. You can change by compiling with
+    ## `-d:ndnsDnsServerIp=1.1.1.1`.
+  ndnsDnsServerIpDomain = case parseIpAddress(ndnsDnsServerIp).family
+                          of IpAddressFamily.IPv6: AF_INET6
+                          of IpAddressFamily.IPv4: AF_INET
+  ndnsClient = DnsClient(ip: ndnsDnsServerIp, port: Port(53), domain: ndnsDnsServerIpDomain)
 
 randomize()
 
-proc initDnsClient*(ip: string = defaultIpDns, port: Port = Port(53)): DnsClient =
+template initDnsClientImpl() =
+  let ip = parseIpAddress(strIp)
+
+  result.ip = strIp
+  result.port = port
+
+  case ip.family
+  of IpAddressFamily.IPv6:
+    result.domain = AF_INET6
+  of IpAddressFamily.IPv4:
+    result.domain = AF_INET
+
+proc initDnsClientImpl(strIp: string, port: Port, raiseExceptions: static[bool]): DnsClient =
+  when raiseExceptions:
+    initDnsClientImpl()
+  else:
+    try:
+      initDnsClientImpl()
+    except ValueError:
+      result = ndnsClient
+
+proc initDnsClient*(ip: string = ndnsDnsServerIp, port: Port = Port(53)): DnsClient =
   ## Returns a created `DnsClient` object.
   ##
   ## **Parameters**
   ## - `ip` is a DNS server IP. It can be IPv4 or IPv6. It cannot be a domain
   ##   name.
   ## - `port` is a DNS server listening port.
-  let tmp = parseIpAddress(ip)
-
-  result.ip = ip
-  result.port = port
-  case tmp.family
-  of IpAddressFamily.IPv6:
-    result.domain = AF_INET6
-  of IpAddressFamily.IPv4:
-    result.domain = AF_INET
+  initDnsClientImpl(ip, port, true)
 
 proc initSystemDnsClient*(): DnsClient =
   ## Returns a `DnsClient` object, in which the dns server IP is the first one
   ## used by the system. If it is not possible to determine a dns server IP by
-  ## the system, it will be initialized with `defaultIpDns`.
+  ## the system, it will be initialized with `ndnsDnsServerIp`.
   ##
   ## Currently implemented for:
   ## - `Windows<ndns/platforms/winapi.html>`_
@@ -162,20 +186,36 @@ proc initSystemDnsClient*(): DnsClient =
   ## - `BSD<ndns/platforms/resolv.html>`_
   ##
   ## Notes:
-  ## - It just creates a `DnsClient` object with the IPv4 used by the system.
-  ##   Does not use the system's native DNS resolution implementation unless the
+  ## - If your platform is not listed above and uses a `resolver configuration
+  ##   file<ndns/platforms/resolv.html>`_, compile with `-d:ndnsUseResolver`.
+  ## - It just creates a `DnsClient` object with the IP used by the system. Does
+  ##   not use the system's native DNS resolution implementation unless the
   ##   system provides a proxy.
   ## - The `ip` field in the `DnsClient` object does not change automatically if
   ##   the IP used by the system changes.
   when declared(getSystemDnsServer):
-    var ipServDns = getSystemDnsServer()
+    let ipServDns = getSystemDnsServer()
 
     if ipServDns == "":
-      ipServDns = defaultIpDns
-
-    initDnsClient(ipServDns)
+      result = ndnsClient
+    else:
+      result = initDnsClientImpl(ipServDns, Port(53), false)
   else:
-    initDnsClient()
+    result = ndnsClient
+
+proc getIp*(client: DnsClient): string =
+  ## Returns the IP defined in the `client`.
+  ##
+  ## Give preference to this procedure than `client.ip`, as it will be
+  ## deprecated in the future.
+  client.ip
+
+proc getPort*(client: DnsClient): Port =
+  ## Returns the port defined in the `client`.
+  ##
+  ## Give preference to this procedure than `client.port`, as it will be
+  ## deprecated in the future.
+  client.port
 
 template newSocketTmpl(sockType: SockType, protocol: Protocol) =
   when socket is AsyncSocket:
