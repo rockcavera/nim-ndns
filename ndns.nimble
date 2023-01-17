@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.1.1"
+version       = "0.1.2"
 author        = "rockcavera"
 description   = "A pure Nim Domain Name System (DNS) client"
 license       = "MIT"

@@ -132,12 +132,11 @@ const
     ## Special domain reserved for reverse IP lookup for IPv4
   ipv6Arpa = "ip6.arpa"
     ## Special domain reserved for IP reverse query for IPv6
-  defaultIpDns* {.deprecated: "Use `ndnsDnsServerIp`".} = "8.8.8.8"
-    ## Default dns server ip for DNS queries. The Google server was chosen due
-    ## to its uptime, with the same IP.
   ndnsDnsServerIp* {.strdefine.} = "8.8.8.8"
     ## Default dns server ip for queries. You can change by compiling with
     ## `-d:ndnsDnsServerIp=1.1.1.1`.
+  defaultIpDns* = ndnsDnsServerIp
+    ## **Deprecated**. Kept only for compatibility reasons.
   ndnsDnsServerIpDomain = case parseIpAddress(ndnsDnsServerIp).family
                           of IpAddressFamily.IPv6: AF_INET6
                           of IpAddressFamily.IPv4: AF_INET
