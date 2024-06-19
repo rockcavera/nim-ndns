@@ -269,13 +269,9 @@ proc dnsTcpQuery*(client: DnsClient, msg: Message, timeout: int = -1): Message =
   try:
     connect(socket, client.ip, client.port, timeout)
   except TimeoutError:
-    close(socket)
-
     raise newException(TimeoutError,  "Connection timeout has been reached")
-  except:
+  finally:
     close(socket)
-
-    raise
 
   send(socket, qBinMsg)
 
@@ -322,6 +318,19 @@ proc dnsTcpQuery*(client: DnsClient, msg: Message, timeout: int = -1): Message =
 
   checkResponse(IPPROTO_TCP)
 
+proc udpPayloadSize(msg: Message): int =
+  ## Returns the UDP payload size.
+  ##
+  ## The payload will always be 512 bytes. However, if the `msg` has an OPT RR
+  ## in additionals, the payload will be the value specified in the `udpSize`
+  ## field.
+  result = 512
+
+  for additional in msg.additionals:
+    if additional.`type` == Type.OPT:
+      result = int(additional.udpSize)
+      break
+
 proc dnsQuery*(client: DnsClient, msg: Message, timeout: int = -1,
                retransmit = false): Message =
   ## Returns a `Message` of the DNS query response performed using the UDP
@@ -337,7 +346,9 @@ proc dnsQuery*(client: DnsClient, msg: Message, timeout: int = -1,
   ## - `retransmit` when `true`, determine the retransmission of the query to
   ##   TCP protocol when the received response is truncated
   ##   (`header.flags.tc == true`).
-  let qBinMsg = toBinMsg(msg)
+  let
+    payloadSize = udpPayloadSize(msg)
+    qBinMsg = toBinMsg(msg)
 
   var socket: Socket
 
@@ -347,18 +358,21 @@ proc dnsQuery*(client: DnsClient, msg: Message, timeout: int = -1,
 
   var
     sRead = @[getFd(socket)]
-    rBinMsg = newString(512)
+    rBinMsg = newString(payloadSize)
     fromIp: string
     fromPort: Port
+    lenReceived: int
 
   if selectRead(sRead, timeout) > 0:
-    discard recvFrom(socket, rBinMsg, 512, fromIp, fromPort)
+    lenReceived = recvFrom(socket, rBinMsg, payloadSize, fromIp, fromPort)
   else:
     close(socket)
 
     raise newException(TimeoutError, "Response timeout has been reached")
 
   close(socket)
+
+  setLen(rBinMsg, lenReceived)
 
   checkResponse(IPPROTO_UDP)
 
@@ -462,7 +476,9 @@ proc dnsAsyncQuery*(client: DnsClient, msg: Message, timeout: int = 500,
   ## - `retransmit` when `true`, determine the retransmission of the query to
   ##   TCP protocol when the received response is truncated
   ##   (`header.flags.tc == true`).
-  let qBinMsg = toBinMsg(msg)
+  let
+    payloadSize = udpPayloadSize(msg)
+    qBinMsg = toBinMsg(msg)
 
   var socket: AsyncSocket
 
@@ -470,7 +486,7 @@ proc dnsAsyncQuery*(client: DnsClient, msg: Message, timeout: int = 500,
 
   await sendTo(socket, client.ip, client.port, qBinMsg)
 
-  var fut = recvFrom(socket, 512)
+  var fut = recvFrom(socket, payloadSize)
 
   if timeout < 0:
     yield fut
