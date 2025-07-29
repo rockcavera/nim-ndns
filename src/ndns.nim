@@ -261,9 +261,9 @@ proc dnsTcpQuery*(client: DnsClient, msg: Message, timeout: int = -1): Message =
   try:
     connect(socket, client.ip, client.port, timeout)
   except TimeoutError:
-    raise newException(TimeoutError, "Connection timeout has been reached")
-  finally:
     close(socket)
+
+    raise newException(TimeoutError, "Connection timeout has been reached")
 
   send(socket, qBinMsg)
 
@@ -568,8 +568,7 @@ template resolveIpv4(async: bool) =
 
   if rmsg.header.flags.rcode == RCode.NoError:
     for rr in rmsg.answers:
-      if rr.name != msg.questions[0].qname or rr.`type` != Type.A or
-        rr.class != Class.IN: continue
+      if rr.`type` != Type.A or rr.class != Class.IN: continue
 
       let ip = IpAddress(family: IpAddressFamily.IPv4,
                          address_v4: RDataA(rr.rdata).address)
@@ -585,8 +584,7 @@ template resolveIpv6(async: bool) =
 
   if rmsg.header.flags.rcode == RCode.NoError:
     for rr in rmsg.answers:
-      if rr.name != msg.questions[0].qname or rr.`type` != Type.AAAA or
-        rr.class != Class.IN: continue
+      if rr.`type` != Type.AAAA or rr.class != Class.IN: continue
 
       let ip = IpAddress(family: IpAddressFamily.IPv6,
                          address_v6: RDataAAAA(rr.rdata).address)
